@@ -29,16 +29,19 @@ class BasePortiaSpider(CrawlSpider):
     items = []
 
     def start_requests(self):
-        for url in self.start_urls:
-            if isinstance(url, dict):
-                type_ = url['type']
-                if type_ == 'generated':
-                    for generated_url in FragmentGenerator()(url):
-                        yield self.make_requests_from_url(generated_url)
-                elif type_ == 'feed':
-                    yield FeedGenerator(self.parse)(url)
-            else:
-                yield self.make_requests_from_url(url)
+        yield SplashRequest(
+            url='https://www.gofundme.com/discover/medical-fundraiser',
+            endpoint='execute',
+            splash_headers={
+                'Authorization': basic_auth_header(self.settings['SPLASH_APIKEY'], ''),
+            },
+            args={
+                'lua_source': self.LUA_SOURCE,
+                'crawlera_user': self.settings['CRAWLERA_APIKEY'],
+            },
+            # tell Splash to cache the lua script, to avoid sending it for every request
+            cache_args=['lua_source'],
+        )
 
     def parse_item(self, response):
         for sample in self.items:
